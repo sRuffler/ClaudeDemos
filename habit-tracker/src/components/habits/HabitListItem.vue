@@ -1,11 +1,12 @@
 <template>
   <div class="habit-list-item">
+    <span class="drag-handle pi pi-bars" />
     <div class="habit-info">
       <span class="habit-name">{{ habit.name }}</span>
       <span v-if="habit.description" class="habit-desc">{{ habit.description }}</span>
     </div>
     <div class="habit-actions">
-      <Tag :value="frequencyLabel" severity="secondary" />
+      <Tag :value="daysLabel" severity="secondary" />
       <Button icon="pi pi-pencil" severity="secondary" text rounded @click="$emit('edit', habit)" aria-label="Edit" />
       <Button icon="pi pi-trash" severity="danger" text rounded @click="confirmDelete" aria-label="Delete" />
     </div>
@@ -26,9 +27,24 @@ const emit = defineEmits(['edit', 'delete'])
 
 const confirm = useConfirm()
 
-const frequencyLabel = computed(() => {
-  const map = { DAILY: 'Daily', WEEKDAYS: 'Weekdays', WEEKENDS: 'Weekends' }
-  return map[props.habit.frequency] ?? props.habit.frequency
+const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEKDAYS = [1, 2, 3, 4, 5]
+const WEEKENDS = [0, 6]
+const ALL = [0, 1, 2, 3, 4, 5, 6]
+
+const daysLabel = computed(() => {
+  const days = (props.habit.days ?? '0,1,2,3,4,5,6')
+    .split(',')
+    .map(Number)
+    .sort((a, b) => a - b)
+
+  if (days.length === 7) return 'Every day'
+  if (days.length === 5 && WEEKDAYS.every((d) => days.includes(d))) return 'Weekdays'
+  if (days.length === 2 && WEEKENDS.every((d) => days.includes(d))) return 'Weekends'
+
+  // Show abbreviated day names in Mon–Sun order (1..6,0)
+  const ordered = [1, 2, 3, 4, 5, 6, 0].filter((d) => days.includes(d))
+  return ordered.map((d) => DAY_ABBR[d]).join(', ')
 })
 
 function confirmDelete() {
@@ -48,12 +64,22 @@ function confirmDelete() {
 .habit-list-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
   padding: 0.75rem 1rem;
   border-radius: var(--p-border-radius);
   background: var(--p-surface-card);
   border: 1px solid var(--p-content-border-color);
+}
+
+.drag-handle {
+  cursor: grab;
+  color: var(--p-text-muted-color);
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .habit-info {
@@ -61,6 +87,7 @@ function confirmDelete() {
   flex-direction: column;
   gap: 0.25rem;
   min-width: 0;
+  flex: 1;
 }
 
 .habit-name {

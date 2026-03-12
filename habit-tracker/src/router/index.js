@@ -19,6 +19,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/upcoming',
+    name: 'upcoming',
+    component: () => import('../pages/UpcomingPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/manage',
     name: 'manage',
     component: () => import('../pages/ManageHabitsPage.vue'),

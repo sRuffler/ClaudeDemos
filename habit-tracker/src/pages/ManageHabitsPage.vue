@@ -12,14 +12,25 @@
       <p>No habits yet. Add your first habit to get started!</p>
     </div>
 
-    <div v-else class="habit-list">
-      <HabitListItem
-        v-for="habit in habitsStore.activeHabits"
-        :key="habit.id"
-        :habit="habit"
-        @edit="openForm"
-        @delete="handleDelete"
-      />
+    <div v-else class="habit-list-wrapper">
+      <p class="reorder-hint">
+        <i class="pi pi-info-circle" /> Drag the <i class="pi pi-bars" /> handle to reorder
+      </p>
+      <draggable
+        v-model="draggableHabits"
+        item-key="id"
+        handle=".drag-handle"
+        class="habit-list"
+        @end="handleReorder"
+      >
+        <template #item="{ element }">
+          <HabitListItem
+            :habit="element"
+            @edit="openForm"
+            @delete="handleDelete"
+          />
+        </template>
+      </draggable>
     </div>
 
     <HabitForm
@@ -35,7 +46,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import draggable from 'vuedraggable'
 import Button from 'primevue/button'
 import ProgressBar from 'primevue/progressbar'
 import ConfirmDialog from 'primevue/confirmdialog'
@@ -51,11 +63,30 @@ const toast = useToast()
 const formVisible = ref(false)
 const editingHabit = ref(null)
 
+// Two-way binding for draggable — mirrors activeHabits, writeable for drag reorder
+const draggableHabits = computed({
+  get: () => habitsStore.activeHabits,
+  set: (val) => {
+    habitsStore.habits = [
+      ...habitsStore.habits.filter((h) => !h.isActive),
+      ...val,
+    ]
+  },
+})
+
 onMounted(() => habitsStore.fetchHabits())
 
 function openForm(habit) {
   editingHabit.value = habit
   formVisible.value = true
+}
+
+async function handleReorder() {
+  try {
+    await habitsStore.reorderHabits(draggableHabits.value.map((h) => h.id))
+  } catch (err) {
+    toast.add({ severity: 'error', summary: 'Reorder failed', detail: err.message, life: 4000 })
+  }
 }
 
 async function handleSaved(payload) {
@@ -100,6 +131,18 @@ async function handleDelete(id) {
 .manage-header h2 {
   margin: 0;
   font-size: 1.5rem;
+}
+
+.habit-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reorder-hint {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+  margin: 0 0 0.25rem;
 }
 
 .habit-list {

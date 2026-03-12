@@ -2,6 +2,11 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '../services/api.js'
 
+function parseDays(daysStr) {
+  if (!daysStr) return [0, 1, 2, 3, 4, 5, 6]
+  return daysStr.split(',').map(Number)
+}
+
 export const useHabitsStore = defineStore('habits', () => {
   const habits = ref([])
   const loading = ref(false)
@@ -10,14 +15,14 @@ export const useHabitsStore = defineStore('habits', () => {
   const activeHabits = computed(() => habits.value.filter((h) => h.isActive))
 
   const habitsForToday = computed(() => {
-    const day = new Date().getDay() // 0=Sun, 6=Sat
-    return activeHabits.value.filter((h) => {
-      if (h.frequency === 'DAILY') return true
-      if (h.frequency === 'WEEKDAYS') return day >= 1 && day <= 5
-      if (h.frequency === 'WEEKENDS') return day === 0 || day === 6
-      return true
-    })
+    const day = new Date().getDay()
+    return activeHabits.value.filter((h) => parseDays(h.days).includes(day))
   })
+
+  function habitsForDate(dateStr) {
+    const day = new Date(dateStr + 'T00:00:00').getDay()
+    return activeHabits.value.filter((h) => parseDays(h.days).includes(day))
+  }
 
   function habitById(id) {
     return habits.value.find((h) => h.id === id)
@@ -68,16 +73,38 @@ export const useHabitsStore = defineStore('habits', () => {
     }
   }
 
+  async function reorderHabits(orderedIds) {
+    const original = habits.value.map((h) => ({ ...h }))
+
+    // Optimistically update sortOrder
+    orderedIds.forEach((id, i) => {
+      const h = habits.value.find((h) => h.id === id)
+      if (h) h.sortOrder = i
+    })
+    habits.value = [...habits.value].sort((a, b) => a.sortOrder - b.sortOrder)
+
+    try {
+      await api.put('/api/habits/reorder', {
+        order: orderedIds.map((id, i) => ({ id, sortOrder: i })),
+      })
+    } catch (err) {
+      habits.value = original // rollback
+      throw err
+    }
+  }
+
   return {
     habits,
     loading,
     error,
     activeHabits,
     habitsForToday,
+    habitsForDate,
     habitById,
     fetchHabits,
     createHabit,
     updateHabit,
     deleteHabit,
+    reorderHabits,
   }
 })

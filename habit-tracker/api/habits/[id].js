@@ -1,6 +1,15 @@
 import { getAuthUser } from '../_lib/auth.js'
 import prisma from '../_lib/prisma.js'
 
+const VALID_DAYS = [0, 1, 2, 3, 4, 5, 6]
+
+function parseDays(days) {
+  if (!Array.isArray(days) || days.length === 0) return null
+  const nums = days.map(Number)
+  if (nums.some((d) => !VALID_DAYS.includes(d))) return null
+  return [...new Set(nums)].sort((a, b) => a - b).join(',')
+}
+
 export default async function handler(req, res) {
   const user = await getAuthUser(req, res)
   if (!user) return
@@ -16,7 +25,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PUT') {
-    const { name, description, frequency, isActive } = req.body
+    const { name, description, days, isActive } = req.body
 
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim().length === 0) {
@@ -27,9 +36,10 @@ export default async function handler(req, res) {
       }
     }
 
-    const validFrequencies = ['DAILY', 'WEEKDAYS', 'WEEKENDS']
-    if (frequency && !validFrequencies.includes(frequency)) {
-      return res.status(400).json({ error: 'frequency must be DAILY, WEEKDAYS, or WEEKENDS' })
+    if (days !== undefined) {
+      if (parseDays(days) === null) {
+        return res.status(400).json({ error: 'days must be a non-empty array of integers 0–6' })
+      }
     }
 
     const updated = await prisma.habit.update({
@@ -37,7 +47,7 @@ export default async function handler(req, res) {
       data: {
         ...(name !== undefined && { name: name.trim() }),
         ...(description !== undefined && { description: description?.trim() || null }),
-        ...(frequency !== undefined && { frequency }),
+        ...(days !== undefined && { days: parseDays(days) }),
         ...(isActive !== undefined && { isActive }),
       },
     })

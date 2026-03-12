@@ -34,15 +34,19 @@
       </div>
 
       <div class="field">
-        <label for="habit-freq">Frequency</label>
-        <Select
-          id="habit-freq"
-          v-model="form.frequency"
-          :options="frequencyOptions"
+        <label for="habit-days">Days <span class="required">*</span></label>
+        <MultiSelect
+          id="habit-days"
+          v-model="form.days"
+          :options="dayOptions"
           optionLabel="label"
           optionValue="value"
+          placeholder="Select days"
+          :class="{ 'p-invalid': errors.days }"
           fluid
+          display="chip"
         />
+        <small v-if="errors.days" class="p-error">{{ errors.days }}</small>
       </div>
 
       <Message v-if="submitError" severity="error" :closable="false">{{ submitError }}</Message>
@@ -64,7 +68,7 @@ import { ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import Select from 'primevue/select'
+import MultiSelect from 'primevue/multiselect'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 
@@ -75,13 +79,24 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'saved'])
 
-const frequencyOptions = [
-  { label: 'Every day', value: 'DAILY' },
-  { label: 'Weekdays (Mon–Fri)', value: 'WEEKDAYS' },
-  { label: 'Weekends (Sat–Sun)', value: 'WEEKENDS' },
+const dayOptions = [
+  { label: 'Monday', value: 1 },
+  { label: 'Tuesday', value: 2 },
+  { label: 'Wednesday', value: 3 },
+  { label: 'Thursday', value: 4 },
+  { label: 'Friday', value: 5 },
+  { label: 'Saturday', value: 6 },
+  { label: 'Sunday', value: 0 },
 ]
 
-const form = ref({ name: '', description: '', frequency: 'DAILY' })
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]
+
+function parseDaysFromHabit(habit) {
+  if (!habit?.days) return [...ALL_DAYS]
+  return habit.days.split(',').map(Number)
+}
+
+const form = ref({ name: '', description: '', days: [...ALL_DAYS] })
 const errors = ref({})
 const saving = ref(false)
 const submitError = ref('')
@@ -93,7 +108,7 @@ watch(
       form.value = {
         name: props.habit?.name ?? '',
         description: props.habit?.description ?? '',
-        frequency: props.habit?.frequency ?? 'DAILY',
+        days: parseDaysFromHabit(props.habit),
       }
       errors.value = {}
       submitError.value = ''
@@ -104,6 +119,7 @@ watch(
 function validate() {
   errors.value = {}
   if (!form.value.name.trim()) errors.value.name = 'Name is required'
+  if (!form.value.days || form.value.days.length === 0) errors.value.days = 'Select at least one day'
   return Object.keys(errors.value).length === 0
 }
 
@@ -115,7 +131,7 @@ async function handleSubmit() {
     emit('saved', {
       name: form.value.name.trim(),
       description: form.value.description.trim() || null,
-      frequency: form.value.frequency,
+      days: [...form.value.days].sort((a, b) => a - b),
     })
   } catch (err) {
     submitError.value = err.message || 'Failed to save habit.'

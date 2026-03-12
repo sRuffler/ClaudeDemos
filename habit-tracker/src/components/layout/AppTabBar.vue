@@ -3,17 +3,21 @@
 </template>
 
 <script setup>
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import TabMenu from 'primevue/tabmenu'
 
 const router = useRouter()
-const route = useRoute()
 
 const items = [
   {
     label: 'Today',
     icon: 'pi pi-check-square',
     command: () => router.push({ name: 'today' }),
+  },
+  {
+    label: 'Upcoming',
+    icon: 'pi pi-calendar',
+    command: () => router.push({ name: 'upcoming' }),
   },
   {
     label: 'Manage Habits',
