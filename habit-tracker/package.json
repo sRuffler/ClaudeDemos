@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "dev:full": "vercel dev",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "prisma generate && vite build",
+    "preview": "vite preview",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@primeuix/themes": "^2.0.3",

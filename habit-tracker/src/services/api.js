@@ -12,9 +12,18 @@ async function request(path, options = {}) {
 
   const res = await fetch(path, { ...options, headers })
 
+  const contentType = res.headers.get('content-type') ?? ''
+  const isJson = contentType.includes('application/json')
+
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }))
+    const body = isJson
+      ? await res.json().catch(() => ({ error: res.statusText }))
+      : { error: `Server error ${res.status}: API route not found or function failed` }
     throw Object.assign(new Error(body.error || 'Request failed'), { status: res.status })
+  }
+
+  if (!isJson) {
+    throw new Error(`Expected JSON but got ${contentType || 'HTML'} — check that the API server is running`)
   }
 
   return res.json()
