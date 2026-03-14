@@ -20,7 +20,7 @@ const items = [
     command: () => router.push({ name: 'upcoming' }),
   },
   {
-    label: 'Manage Habits',
+    label: 'Manage',
     icon: 'pi pi-list',
     command: () => router.push({ name: 'manage' }),
   },
@@ -28,7 +28,11 @@ const items = [
 </script>
 
 <style scoped>
-.app-tabmenu {
-  border-bottom: 1px solid var(--p-content-border-color);
+.app-tabmenu :deep(.p-tabmenu-tablist) {
+  flex-wrap: nowrap;
+}
+
+.app-tabmenu :deep(.p-tabmenu-item-label) {
+  white-space: nowrap;
 }
 </style>

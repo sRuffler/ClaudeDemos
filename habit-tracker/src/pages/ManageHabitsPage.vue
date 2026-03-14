@@ -13,31 +13,14 @@
     </div>
 
     <div v-else class="habit-list-wrapper">
-      <p class="reorder-hint">
-        <i class="pi pi-info-circle" /> Drag the <i class="pi pi-bars" /> handle to reorder
-      </p>
-      <draggable
-        v-model="draggableHabits"
-        item-key="id"
-        handle=".drag-handle"
-        class="habit-list"
-        @end="handleReorder"
-      >
+      <draggable v-model="draggableHabits" item-key="id" handle=".drag-handle" class="habit-list" @end="handleReorder">
         <template #item="{ element }">
-          <HabitListItem
-            :habit="element"
-            @edit="openForm"
-            @delete="handleDelete"
-          />
+          <HabitListItem :habit="element" @edit="openForm" @delete="handleDelete" />
         </template>
       </draggable>
     </div>
 
-    <HabitForm
-      v-model:visible="formVisible"
-      :habit="editingHabit"
-      @saved="handleSaved"
-    />
+    <HabitForm v-model:visible="formVisible" :habit="editingHabit" @saved="handleSaved" />
 
     <ConfirmDialog />
 

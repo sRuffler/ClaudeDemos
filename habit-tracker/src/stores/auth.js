@@ -10,15 +10,19 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!session.value)
   const token = computed(() => session.value?.access_token ?? null)
 
-  async function initAuth() {
-    const { data } = await supabase.auth.getSession()
-    session.value = data.session
-    user.value = data.session?.user ?? null
+  let _initPromise = null
 
-    supabase.auth.onAuthStateChange((_event, newSession) => {
-      session.value = newSession
-      user.value = newSession?.user ?? null
+  function initAuth() {
+    if (_initPromise) return _initPromise
+    _initPromise = supabase.auth.getSession().then(({ data }) => {
+      session.value = data.session
+      user.value = data.session?.user ?? null
+      supabase.auth.onAuthStateChange((_event, newSession) => {
+        session.value = newSession
+        user.value = newSession?.user ?? null
+      })
     })
+    return _initPromise
   }
 
   async function signIn(email, password) {
